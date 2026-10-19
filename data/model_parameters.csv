@@ -1,0 +1,5 @@
+parameter,value,explanation
+p,0.0053273838719920105,Coefficient of innovation estimated from smartphone sales
+q,0.3659118311237011,Coefficient of imitation estimated from smartphone sales
+M_historical_million,17449.746848691502,Historical smartphone market potential from NLS Bass fit
+M_new_proxy_million,34.0694,"Data-based proxy: cumulative IDC display-glasses shipments, 2026-2030"

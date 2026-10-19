@@ -1,0 +1,174 @@
+---
+title: "Innovation Diffusion Analysis: Meta Ray-Ban Display"
+author: "Student Name"
+date: "2026"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(ggplot2)
+source("../scripts/bass_model.R")
+```
+
+# 1. Selected Innovation
+
+For this project, I selected **Meta Ray-Ban Display** from TIME's *Best Inventions of 2025*. The product is a pair of smart glasses with a 600 x 600 pixel display in the right lens. It can show information such as texts and calls without requiring the user to take out a phone. It also works with a Neural Band that uses electromyography (EMG) signals from small forearm movements to control functions. TIME reports about 6 hours of battery life for the glasses and 18 hours for the Neural Band.
+
+Source: TIME, 2025, *Meta Ray-Ban Display: The Best Inventions of 2025*.
+
+# 2. Historical Look-Alike Innovation
+
+I use **smartphones** as the historical look-alike innovation. Both smartphones and smart glasses are personal digital devices that provide quick access to communication, information, and digital services. Smartphones moved many digital activities into a device people carry all day. Smart glasses attempt to move part of that experience into a wearable form.
+
+The comparison is also useful for diffusion analysis. Smartphone adoption did not happen immediately. Sales started at relatively low levels and then grew quickly as the products improved, app ecosystems expanded, prices changed, and more people observed others using them. Social influence is therefore an important part of the adoption process, which fits the logic of the Bass Model.
+
+# 3. Historical Data
+
+The historical dataset contains annual worldwide smartphone sales from 2007 through 2020, measured in millions of units. The source is Gartner through Statista. These values are observed historical data; they are not simulated.
+
+```{r historical-data}
+smart <- read.csv("../data/smartphone_sales_gartner_statista_2007_2020.csv")
+knitr::kable(smart[, c("year", "sales_million_units")],
+             col.names = c("Year", "Smartphone sales (million units)"))
+```
+
+```{r historical-chart, echo=FALSE, fig.width=8, fig.height=5}
+ggplot(smart, aes(year, sales_million_units)) +
+  geom_col() +
+  labs(title = "Global Smartphone Sales", y = "Million units", x = "Year") +
+  theme_minimal()
+```
+
+# 4. Bass Model
+
+The Bass Model describes adoption using two effects. The coefficient **p** represents innovation or external influence. The coefficient **q** represents imitation or social influence. The parameter **M** represents market potential.
+
+The adoption-rate form is:
+
+\[
+\frac{f(t)}{1-F(t)} = p + qF(t)
+\]
+
+The number of adopters at time \(t\) is:
+
+\[
+a(t) = M f(t)
+\]
+
+where
+
+\[
+f(t)=\frac{(p+q)^2 e^{-(p+q)t}}{p\left[1+(q/p)e^{-(p+q)t}\right]^2}.
+\]
+
+# 5. Parameter Estimation from Smartphones
+
+I estimate the smartphone Bass parameters using nonlinear least squares, following the method presented in class.
+
+```{r bass-estimation}
+sales <- smart$sales_million_units
+t <- 1:length(sales)
+
+bass_m <- nls(
+  sales ~ m * (((p + q)^2 / p) * exp(-(p + q) * t)) /
+    (1 + (q / p) * exp(-(p + q) * t))^2,
+  start = list(m = sum(sales), p = 0.02, q = 0.4)
+)
+
+coef(bass_m)
+```
+
+Using the real smartphone sales series, the fitted values are approximately:
+
+- \(p = 0.00533\)
+- \(q = 0.36591\)
+- historical fitted \(M = 17,449.75\) million units
+
+The much larger value of \(q\) compared with \(p\) suggests that imitation and social influence played a much larger role in smartphone diffusion than purely independent innovation.
+
+```{r fit-chart, echo=FALSE, fig.width=8, fig.height=5}
+smart$predicted_sales_million <- predict(bass_m)
+ggplot(smart, aes(year)) +
+  geom_col(aes(y = sales_million_units), alpha = 0.6) +
+  geom_line(aes(y = predicted_sales_million), linewidth = 1) +
+  geom_point(aes(y = predicted_sales_million), size = 1.6) +
+  labs(title = "Smartphone Sales and Bass Model Fit",
+       y = "Million units", x = "Year") +
+  theme_minimal()
+```
+
+# 6. Geographic Scope
+
+The scope of the analysis is **global**. Meta and Ray-Ban distribute products internationally, and smart glasses are part of a global consumer-electronics market. A global scope also matches the smartphone comparison dataset, which is worldwide.
+
+# 7. Market-Potential Input for Display Glasses
+
+I do not use an invented market-potential number. Instead, I use IDC's published forecast for **optical see-through display glasses**, the category most closely related to Meta Ray-Ban Display. IDC forecasts approximately 3.0 million units in 2026 and 12.2 million units in 2030, with a 41.9% CAGR over this period.
+
+For 2027-2029, the values are calculated directly from IDC's published CAGR. They are therefore derived calculations from a real published forecast, not fabricated observations.
+
+```{r idc-data}
+idc <- read.csv("../data/display_glasses_market_idc.csv")
+knitr::kable(idc[, c("year", "shipments_million_units", "value_type")],
+             col.names = c("Year", "Shipments (million units)", "Type"))
+```
+
+The cumulative 2026-2030 shipment volume is **34.0694 million units**. I use this only as a transparent, data-based proxy for market potential over the forecast horizon. IDC does not state that 34.0694 million is the unique-adopter market potential for Meta Ray-Ban Display, so this limitation is explicitly acknowledged.
+
+# 8. Meta Ray-Ban Display Diffusion Scenario
+
+The new-product scenario transfers the smartphone estimates of \(p\) and \(q\) to the smart-glasses product and uses the IDC-based market-potential proxy described above.
+
+```{r forecast}
+p_est <- unname(coef(bass_m)["p"])
+q_est <- unname(coef(bass_m)["q"])
+M_new <- sum(idc$shipments_million_units)
+forecast_t <- 1:15
+
+forecast <- data.frame(
+  year = 2025 + forecast_t,
+  t = forecast_t,
+  predicted_new_adopters_million = M_new * bass_f(forecast_t, p_est, q_est),
+  predicted_cumulative_adopters_million = M_new * bass_F(forecast_t, p_est, q_est)
+)
+
+knitr::kable(forecast, digits = 3,
+             col.names = c("Year", "t", "New adopters (M)", "Cumulative adopters (M)"))
+```
+
+```{r forecast-chart, echo=FALSE, fig.width=8, fig.height=5}
+ggplot(forecast, aes(year, predicted_new_adopters_million)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(title = "Meta Ray-Ban Display: Bass-Model Diffusion Scenario",
+       y = "Predicted new adopters (million)", x = "Year") +
+  theme_minimal()
+```
+
+The model produces a slow beginning followed by stronger adoption as imitation becomes more important. This is consistent with the Bass Model logic. These values are **model forecasts**, not claimed historical facts.
+
+# 9. Peak Adoption
+
+The theoretical Bass peak occurs at:
+
+\[
+t^*=\frac{\ln(q/p)}{p+q}.
+\]
+
+Using the fitted smartphone parameters, the peak occurs at approximately 11.4 periods after introduction. Because the annual model is indexed in years, this points to a peak around the eleventh to twelfth year in a smartphone-like diffusion scenario.
+
+# 10. Limitations
+
+This analysis has several limitations. First, smartphones and display smart glasses are not identical products. Second, transferring smartphone \(p\) and \(q\) assumes that consumer response to smart glasses follows a similar social-diffusion pattern. Third, the IDC-based \(M\) value is a transparent proxy constructed from category shipment forecasts, not a direct estimate of unique Meta Ray-Ban Display adopters. Finally, the standard Bass Model does not directly include price changes, competition, privacy concerns, regulation, product redesigns, or advertising spending.
+
+# 11. Conclusion
+
+Meta Ray-Ban Display is a suitable product for Bass Model analysis because it is a new consumer technology entering a market where social acceptance and observation of other users are likely to matter. Smartphones provide a useful historical comparison because they are another personal digital technology that experienced a strong diffusion process. The historical Bass estimates show a small innovation coefficient and a much larger imitation coefficient, suggesting that social influence was important in smartphone adoption. Using those parameters together with a market-potential proxy built from IDC's published display-glasses forecast gives a transparent scenario for how adoption of the new technology could develop over time.
+
+# References
+
+- TIME. (2025). *Meta Ray-Ban Display: The Best Inventions of 2025*. https://time.com/collections/best-inventions-2025/7318319/meta-ray-ban-display/
+- Statista / Gartner. *Number of smartphones sold to end users worldwide from 2007 to 2021 (in million units)*. https://www.statista.com/statistics/263437/global-smartphone-sales-to-end-users-since-2007/
+- IDC. (2026). *Augmented and Virtual Reality Headsets Market Insights*. https://www.idc.com/promo/arvr/
+- IDC. (2026). *Smart Glasses Surge: The XR Market Is Rewriting Its Own Rules*. https://www.idc.com/resource-center/blog/smart-glasses-surge-the-xr-market-is-rewriting-its-own-rules/

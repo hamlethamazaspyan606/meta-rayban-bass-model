@@ -1,0 +1,3 @@
+Local git repository initialized with one commit.
+b3fb23e Initial Bass Model project
+?? GIT_STATUS.txt

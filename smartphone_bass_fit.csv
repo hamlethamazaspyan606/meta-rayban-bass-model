@@ -1,0 +1,15 @@
+year,sales_million_units,source,predicted_sales_million
+2007,122.32,Gartner via Statista,133.0286248158686
+2008,139.29,Gartner via Statista,189.2952053395838
+2009,172.38,Gartner via Statista,267.2105099216562
+2010,296.65,Gartner via Statista,372.9565792186993
+2011,472.0,Gartner via Statista,512.4112991297708
+2012,680.11,Gartner via Statista,688.9526857309924
+2013,969.72,Gartner via Statista,899.826320078365
+2014,1244.74,Gartner via Statista,1131.633568604232
+2015,1423.9,Gartner via Statista,1357.2193341007167
+2016,1495.96,Gartner via Statista,1537.9493320505246
+2017,1536.54,Gartner via Statista,1634.3731392195216
+2018,1556.27,Gartner via Statista,1622.4036520823292
+2019,1540.66,Gartner via Statista,1505.1448200966238
+2020,1378.72,Gartner via Statista,1311.2948433044849
